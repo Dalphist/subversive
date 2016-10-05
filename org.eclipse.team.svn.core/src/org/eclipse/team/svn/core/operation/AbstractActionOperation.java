@@ -103,6 +103,9 @@ public abstract class AbstractActionOperation implements IActionOperation {
 		}
 		finally {
 			if (this.consoleStream != null) {
+				if(SVNTeamPlugin.instance().isDebugging()){
+					writeToConsole(IConsoleStream.LEVEL_WARNING, this.name + " -> ");
+				}
 				this.consoleStream.markEnd();
 			}
 		}

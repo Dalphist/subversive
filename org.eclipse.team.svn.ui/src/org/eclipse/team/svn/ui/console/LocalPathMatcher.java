@@ -99,6 +99,11 @@ public class LocalPathMatcher implements IPatternMatchListenerDelegate, IPropert
 	    	}
 		}
 		
+		@Override
+		protected void writeToConsole(int severity, String data) {
+			// ignore to avoid recursion
+		}
+		
 	}
 
 }

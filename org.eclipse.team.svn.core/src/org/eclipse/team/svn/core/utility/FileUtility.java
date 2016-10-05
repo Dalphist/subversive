@@ -258,6 +258,10 @@ public final class FileUtility {
      * If the resource is the workspace root, a team private or a linked one, it should not be managed by SVN plug-in
      */
     public static boolean isNotSupervised(IResource resource) {
+    	if(resource instanceof IProject){
+    		// fast path for projects which are never team private or linked
+    		return false;
+    	}
     	return 
     		resource instanceof IWorkspaceRoot || resource.isTeamPrivateMember() || FileUtility.isLinked(resource); 
     }
@@ -516,15 +520,16 @@ public final class FileUtility {
 				parents.add(parent);
 			}
 			else {
-				while ((parent = parent.getParent()) != null && !(parent instanceof IWorkspaceRoot)) {
-					parents.add(parent);
-				}
-			}
-		}
-		if (excludeIncoming) {
-			for (int i = 0; i < resources.length; i++) {
-				if (resources[i].getType() != IResource.PROJECT) {
-					parents.remove(resources[i]);
+				if(excludeIncoming){
+					parents.add(parent.getProject());
+				} else {
+					while ((parent = parent.getParent()) != null && !(parent instanceof IWorkspaceRoot)) {
+						boolean notYetThere = parents.add(parent);
+						if(!notYetThere){
+							// don't recurse if our parent was already there
+							break;
+						}
+					}
 				}
 			}
 		}
@@ -706,13 +711,34 @@ public final class FileUtility {
 	}
 	
 	public static void reorder(IResource []resources, final boolean parent2Child) {
-		Arrays.sort(resources, new Comparator<Object>() {
-			public int compare(Object o1, Object o2) {
-				String first = ((IResource)o1).getFullPath().toString();
-				String second = ((IResource)o2).getFullPath().toString();
-				return parent2Child ? first.compareTo(second) : second.compareTo(first);
+		if(parent2Child) {
+			Arrays.sort(resources, new FullPathComparator());
+		} else {
+			Arrays.sort(resources, new InverseFullPathComparator());
+		}
+	}
+	
+	static class FullPathComparator implements Comparator<IResource> {
+		public int compare(IResource r1, IResource r2) {
+			IPath p1 = r1.getFullPath();
+			IPath p2 = r2.getFullPath();
+			int result = 0;
+			int minSize = Math.min(p1.segmentCount(), p2.segmentCount());
+			for (int i = 0; i < minSize; i++) {
+				result = p1.segment(i).compareTo(p2.segment(i));
+				if (result != 0) {
+					return result;
+				}
 			}
-		});
+			return p1.segmentCount() - p2.segmentCount();
+		}
+	}
+	
+	static class InverseFullPathComparator extends FullPathComparator {
+		@Override
+		public int compare(IResource p1, IResource p2) {
+			return  super.compare(p2, p1);
+		}
 	}
 	
 	public static void reorder(File []files, final boolean parent2Child) {

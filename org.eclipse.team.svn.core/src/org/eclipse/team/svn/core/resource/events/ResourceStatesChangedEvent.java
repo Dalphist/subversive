@@ -11,6 +11,7 @@
 
 package org.eclipse.team.svn.core.resource.events;
 
+import java.util.Arrays;
 import java.util.HashSet;
 
 import org.eclipse.core.resources.IContainer;
@@ -19,6 +20,7 @@ import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.team.svn.core.utility.FileUtility;
+import org.eclipse.team.svn.core.utility.IQueuedElement;
 import org.eclipse.team.svn.core.utility.SVNUtility;
 
 /**
@@ -26,7 +28,7 @@ import org.eclipse.team.svn.core.utility.SVNUtility;
  * 
  * @author Alexander Gurov
  */
-public class ResourceStatesChangedEvent {
+public class ResourceStatesChangedEvent implements IQueuedElement<ResourceStatesChangedEvent> {
 	public static final int CHANGED_NODES = 0;
 	public static final int PATH_NODES = 1;
 	public final IResource []resources;
@@ -112,4 +114,71 @@ public class ResourceStatesChangedEvent {
 		return false;
 	}
 	
+	public int getSize(){
+		return resources.length;
+	}
+	
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + depth;
+		result = prime * result + Arrays.hashCode(resources);
+		result = prime * result + type;
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (!(obj instanceof ResourceStatesChangedEvent)) {
+			return false;
+		}
+		ResourceStatesChangedEvent other = (ResourceStatesChangedEvent) obj;
+		if (depth != other.depth) {
+			return false;
+		}
+		if (type != other.type) {
+			return false;
+		}
+		if (!Arrays.equals(resources, other.resources)) {
+			return false;
+		}
+		return true;
+	}
+	
+	public boolean canSkip() {
+		return true;
+	}
+	
+	public boolean canMerge(ResourceStatesChangedEvent e){
+		return depth == e.depth && type == e.type;
+	}
+	
+	public ResourceStatesChangedEvent merge(ResourceStatesChangedEvent event){
+		IResource [] arr = new IResource[resources.length + event.resources.length];
+		System.arraycopy(resources, 0, arr, 0, resources.length);
+		System.arraycopy(event.resources, 0, arr, resources.length, event.resources.length);
+		return new ResourceStatesChangedEvent(arr, depth, type);
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("ResourceStatesChangedEvent [depth=");
+		builder.append(depth);
+		builder.append(", size=");
+		builder.append(resources.length);
+		builder.append(", ");
+		builder.append(", type=");
+		builder.append(type);
+		builder.append(", ");
+		builder.append("resources=");
+		builder.append(Arrays.toString(resources));
+		builder.append("]");
+		return builder.toString();
+	}
+
 }

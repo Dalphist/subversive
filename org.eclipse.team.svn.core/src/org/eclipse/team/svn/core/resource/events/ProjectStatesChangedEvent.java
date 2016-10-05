@@ -11,6 +11,8 @@
 
 package org.eclipse.team.svn.core.resource.events;
 
+import java.util.Arrays;
+
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 
@@ -35,4 +37,46 @@ public class ProjectStatesChangedEvent extends ResourceStatesChangedEvent {
 		this.newState = newState;
 	}
 
+	@Override
+	public boolean canMerge(ResourceStatesChangedEvent e) {
+		if(e instanceof ProjectStatesChangedEvent){			
+			return super.canMerge(e) && newState == ((ProjectStatesChangedEvent)e).newState;
+		}
+		return false;
+	}
+	
+	@Override
+	public ProjectStatesChangedEvent merge(ResourceStatesChangedEvent event) {
+		IProject [] arr = new IProject[resources.length + event.resources.length];
+		System.arraycopy(resources, 0, arr, 0, resources.length);
+		System.arraycopy(event.resources, 0, arr, resources.length, event.resources.length);
+		return new ProjectStatesChangedEvent(arr, newState);
+	}
+	
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + newState;
+		result = prime * result + Arrays.hashCode(resources);
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (!(obj instanceof ProjectStatesChangedEvent)) {
+			return false;
+		}
+		ProjectStatesChangedEvent other = (ProjectStatesChangedEvent) obj;
+		if (newState != other.newState) {
+			return false;
+		}
+		if (!Arrays.equals(resources, other.resources)) {
+			return false;
+		}
+		return true;
+	}
 }

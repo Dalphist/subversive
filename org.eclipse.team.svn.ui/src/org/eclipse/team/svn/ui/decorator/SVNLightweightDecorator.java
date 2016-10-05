@@ -525,6 +525,6 @@ public class SVNLightweightDecorator extends LabelProvider implements ILightweig
 	 * @see org.eclipse.team.svn.core.resource.events.IResourceStatesListener#resourcesStateChanged(org.eclipse.team.svn.core.resource.events.ResourceStatesChangedEvent)
 	 */
 	public void resourcesStateChanged(ResourceStatesChangedEvent event) {	
-		this.fireLabelProviderChanged(new LabelProviderChangedEvent(this, event.getResourcesRecursivelly()));
+		this.fireLabelProviderChanged(new LabelProviderChangedEvent(this, event.resources));
 	}
 }

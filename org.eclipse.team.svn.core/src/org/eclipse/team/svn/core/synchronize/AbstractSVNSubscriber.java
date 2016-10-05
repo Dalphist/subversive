@@ -253,7 +253,8 @@ public abstract class AbstractSVNSubscriber extends Subscriber implements IResou
 	
     public void resourcesStateChanged(ResourceStatesChangedEvent event) {
     	try {
-    		if (event.type == ResourceStatesChangedEvent.CHANGED_NODES) {    		
+    		if (event.type == ResourceStatesChangedEvent.CHANGED_NODES) {    	
+    			// TODO: should we expand *entire* projects here???
 				this.resourcesStateChangedImpl(event.getResourcesRecursivelly());
     		}
 		} catch (TeamException e) {
@@ -283,9 +284,17 @@ public abstract class AbstractSVNSubscriber extends Subscriber implements IResou
 	}
 	
     protected void resourcesStateChangedImpl(IResource []resources) throws TeamException {
-    	Set<IResource> allResources = new HashSet<IResource>(Arrays.asList(resources));
-    	for (int i = 0; i < resources.length; i++) {
-    		allResources.addAll(Arrays.asList(this.statusCache.allMembers(resources[i])));
+    	Set<IResource> allResources = new HashSet<IResource>(resources.length);
+    	for (IResource resource : resources) {
+    		allResources.add(resource);
+
+    		// this returns *all* members, also ignored too
+			IResource[] allMembers = this.statusCache.allMembers(resource);
+    		if(allMembers.length > 0){
+    			for (IResource child : allMembers) {
+    				allResources.add(child);
+				}
+    		}
     	}
     	synchronized (this.oldResources) {
     		for (Iterator<IResource> it = this.oldResources.iterator(); it.hasNext(); ) {
@@ -295,13 +304,16 @@ public abstract class AbstractSVNSubscriber extends Subscriber implements IResou
 				 * I investigated the code but couldn't find the better way how to fix this problem.
 				 * TODO Possibly, there's a better solution for it.
 				 */
-				if (resource.getLocation() != null) {
+				if (resource.getLocation() != null && !allResources.contains(resource)) {
 					SVNChangeStatus status = SVNUtility.getSVNInfoForNotConnected(resource);
 					if (status == null || (status.textStatus != SVNEntryStatus.Kind.DELETED && status.textStatus != SVNEntryStatus.Kind.MISSING)) {
 						allResources.add(resource);
 					}	
 				}
 			}
+    		if(allResources.isEmpty()){
+    			return;
+    		}
         	IResource []refreshSet = allResources.toArray(new IResource[allResources.size()]);
         	// ensure we cached all locally-known resources
         	if (CoreExtensionsManager.instance().getOptionProvider().is(IOptionProvider.SVN_CACHE_ENABLED)) {

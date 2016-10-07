@@ -1,3 +1,10 @@
 bin/
 /org.eclipse.team.svn.update-site/features
 /org.eclipse.team.svn.update-site/plugins
+/org.eclipse.team.svn.core.update-site/features
+/org.eclipse.team.svn.core.update-site/plugins
+/org.eclipse.team.svn.pde.build-site/features
+/org.eclipse.team.svn.pde.build-site/plugins
+artifacts.jar
+content.jar
+logs.zip
